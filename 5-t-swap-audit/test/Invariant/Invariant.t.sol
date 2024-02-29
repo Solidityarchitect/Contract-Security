@@ -43,7 +43,11 @@ contract Invariant is StdInvariant, Test {
         targetContract(address(handler));
     }
 
-    function statefulFuzz_constantProductFormulaStaysTheSame() public {
+    function statefulFuzz_constantProductFormulaStaysTheSameX() public {
         assertEq(handler.actualDeltaX(), handler.expectedDeltaX());
+    }
+
+    function statefulFuzz_constantProductFormulaStaysTheSameY() public {
+        assertEq(handler.actualDeltaY(), handler.expectedDeltaY());
     }
 }
