@@ -196,4 +196,41 @@ contract TSwapPoolTest is Test {
 
         assertEq(actualDeltaY, expectedDeltaY);
     }
+
+    function testGetInputAmountBasedOnOutput() public {
+        vm.startPrank(liquidityProvider);
+        weth.approve(address(pool), 100e18);
+        poolToken.approve(address(pool), 100e18);
+        pool.deposit(100e18, 100e18, 100e18, uint64(block.timestamp));
+        vm.stopPrank();
+
+        int256 inputReserves = int256(weth.balanceOf(address(pool)));
+        int256 outputReserves = int256(poolToken.balanceOf(address(pool)));
+
+        uint256 expectedOutputAmount = 1e18;
+        uint256 expectedInputAmount = 1e18;
+        uint256 actualInputAmount = pool.getInputAmountBasedOnOutput(
+            expectedOutputAmount,
+            uint256(inputReserves),
+            uint256(outputReserves)
+        );
+
+        assertEq(expectedInputAmount, actualInputAmount);
+    }
+
+    function testSellPoolTokens() public {
+        vm.startPrank(liquidityProvider);
+        weth.approve(address(pool), 100e18);
+        poolToken.approve(address(pool), 100e18);
+        pool.deposit(100e18, 100e18, 100e18, uint64(block.timestamp));
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        poolToken.approve(address(pool), 10e18);
+        uint256 expectedWethAmount = 5e18;
+        uint256 actualWethAmount = pool.sellPoolTokens(5e18);
+        vm.stopPrank();
+
+        assertEq(expectedWethAmount, actualWethAmount);
+    }
 }
