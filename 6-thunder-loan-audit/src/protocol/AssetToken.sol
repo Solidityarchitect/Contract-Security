@@ -84,15 +84,22 @@ contract AssetToken is ERC20 {
         i_underlying.safeTransfer(to, amount);
     }
 
+    // e responsible for updating the exchange rate of AssetTokens -> Underlying
     function updateExchangeRate(uint256 fee) external onlyThunderLoan {
         // 1. Get the current exchange rate
         // 2. How big the fee is should be divided by the total supply
         // 3. So if the fee is 1e18, and the total supply is 2e18, the exchange rate be multiplied by 1.5
         // if the fee is 0.5 ETH, and the total supply is 4, the exchange rate should be multiplied by 1.125
+        // it should always go up, never down -> INVARIANT!!!!
+        // q ok but why?
         // it should always go up, never down
         // newExchangeRate = oldExchangeRate * (totalSupply + fee) / totalSupply
         // newExchangeRate = 1 (4 + 0.5) / 4
         // newExchangeRate = 1.125
+
+        // q what if totalSupply is 0?
+        // this breaks! is that an issue?
+        // @audit gas, too many storage reads -> store as a memory variable
         uint256 newExchangeRate = (s_exchangeRate * (totalSupply() + fee)) /
             totalSupply();
 
