@@ -1,4 +1,61 @@
-### [H-1] Unnecessary `updateExchangeRate` in `deposit` function incorrectly updates `exchangeRate` preventing withdraws and unfairly changing reward distribution
+## High
+
+### [H-1] Mixing up variable location causes storage collisions in `ThunderLoan::s_flashLoanFee` and `ThunderLoan::s_currentlyFlashLoaning`
+
+**Description:** `ThunderLoan.sol` has two variables in the following order:
+
+```javascript
+    uint256 private s_feePrecision;
+    uint256 private s_flashLoanFee; // 0.3% ETH fee
+```
+
+However, the expected upgraded contract `ThunderLoanUpgraded.sol` has them in a different order.
+
+```javascript
+    uint256 private s_flashLoanFee; // 0.3% ETH fee
+    uint256 public constant FEE_PRECISION = 1e18;
+```
+
+Due to how Solidity storage works, after the upgrade, the `s_flashLoanFee` will have the value of `s_feePrecision`. You cannot adjust the positions of storage variables when working with upgradeable contracts.
+
+**Impact:** After upgrade, the `s_flashLoanFee` will have the value of `s_feePrecision`. This means that users who take out flash loans right after an upgrade will be charged the wrong fee. Additionally the `s_currentlyFlashLoaning` mapping will start on the wrong storage slot.
+
+**Proof of Code:**
+
+<details>
+<summary>Code</summary>
+Add the following code to the `ThunderLoanTest.t.sol` file.
+
+```javascript
+// You'll need to import `ThunderLoanUpgraded` as well
+import { ThunderLoanUpgraded } from "../../src/upgradedProtocol/ThunderLoanUpgraded.sol";
+
+function testUpgradeBreaks() public {
+        uint256 feeBeforeUpgrade = thunderLoan.getFee();
+        vm.startPrank(thunderLoan.owner());
+        ThunderLoanUpgraded upgraded = new ThunderLoanUpgraded();
+        thunderLoan.upgradeTo(address(upgraded));
+        uint256 feeAfterUpgrade = thunderLoan.getFee();
+
+        assert(feeBeforeUpgrade != feeAfterUpgrade);
+    }
+```
+
+</details>
+
+You can also see the storage layout difference by running `forge inspect ThunderLoan storage` and `forge inspect ThunderLoanUpgraded storage`
+
+**Recommended Mitigation:** Do not switch the positions of the storage variables on upgrade, and leave a blank if you're going to replace a storage variable with a constant. In `ThunderLoanUpgraded.sol`:
+
+```diff
+-    uint256 private s_flashLoanFee; // 0.3% ETH fee
+-    uint256 public constant FEE_PRECISION = 1e18;
++    uint256 private s_blank;
++    uint256 private s_flashLoanFee;
++    uint256 public constant FEE_PRECISION = 1e18;
+```
+
+### [H-2] Unnecessary `updateExchangeRate` in `deposit` function incorrectly updates `exchangeRate` preventing withdraws and unfairly changing reward distribution
 
 **Description:**
 
@@ -72,3 +129,51 @@ Place the following into `ThunderLoanTest.t.sol`
         token.safeTransferFrom(msg.sender, address(assetToken), amount);
     }
 ```
+
+## Medium
+
+### [M-1] Centralization risk for trusted owners
+
+#### Impact:
+
+Contracts have owners with privileged rights to perform admin tasks and need to be trusted to not perform malicious updates or drain funds.
+
+_Instances (2)_:
+
+```solidity
+File: src/protocol/ThunderLoan.sol
+
+223:     function setAllowedToken(IERC20 token, bool allowed) external onlyOwner returns (AssetToken) {}
+
+261:     function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
+```
+
+#### Contralized owners can brick redemptions by disapproving of a specific token
+
+### [M-2] Using TSwap as price oracle leads to price and oracle manipulation attacks
+
+**Description:** The TSwap protocol is a constant product formula based AMM (automated market maker). The price of a token is determined by how many reserves are on either side of the pool. Because of this, it is easy for malicious users to manipulate the price of a token by buying or selling a large amount of the token in the same transaction, essentially ignoring protocol fees.
+
+**Impact:** Liquidity providers will drastically reduced fees for providing liquidity.
+
+**Proof of Concept:**
+
+The following all happens in 1 transaction.
+
+1. User takes a flash loan from `ThunderLoan` for 1000 `tokenA`. They are charged the original fee `fee1`. During the flash loan, they do the following:
+   1. User sells 1000 `tokenA`, tanking the price.
+   2. Instead of repaying right away, the user takes out another flash loan for another 1000 `tokenA`.
+      1. Due to the fact that the way `ThunderLoan` calculates price based on the `TSwapPool` this second flash loan is substantially cheaper.
+
+```javascript
+    function getPriceInWeth(address token) public view returns (uint256) {
+        address swapPoolOfToken = IPoolFactory(s_poolFactory).getPool(token);
+@>      return ITSwapPool(swapPoolOfToken).getPriceOfOnePoolTokenInWeth();
+    }
+```
+
+    3. The user then repays the first flash loan, and then repays the second flash loan.
+
+I have created a proof of code located in my `audit-data` folder. It is too large to include here.
+
+**Recommended Mitigation:** Consider using a different price oracle mechanism, like a Chainlink price feed with a Uniswap TWAP fallback oracle.
