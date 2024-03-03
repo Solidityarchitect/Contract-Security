@@ -97,6 +97,15 @@ contract AssetToken is ERC20 {
         // newExchangeRate = 1 (4 + 0.5) / 4
         // newExchangeRate = 1.125
 
+        // 4 * 1.125 = 4.5 USDC
+        // 5 assetToken
+        // 5 USDC
+        // Exchange Rate 1
+        // 1 fee
+        // ?? exchange fee
+        // (1 * 5) + 1 / 5 = 1.2
+        // 5 AssetToken * 1.2 new fee = 6 USDC
+
         // q what if totalSupply is 0?
         // this breaks! is that an issue?
         // @audit gas, too many storage reads -> store as a memory variable
