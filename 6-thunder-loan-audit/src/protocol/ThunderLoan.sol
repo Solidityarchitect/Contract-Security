@@ -110,7 +110,7 @@ contract ThunderLoan is
 
     // The fee in WEI, it should have 18 decimals. Each flash loan takes a flat fee of the token price.
     // @audit-info this should be constant or immutable
-    uint256 private s_feePrecision; // q why is this a storage variable?
+    uint256 private s_feePrecision; // @audit-info this should be constant/immutable
     uint256 private s_flashLoanFee; // 0.3% ETH fee
 
     mapping(IERC20 token => bool currentlyFlashLoaning)
@@ -199,8 +199,9 @@ contract ThunderLoan is
             exchangeRate;
         emit Deposit(msg.sender, token, amount);
         assetToken.mint(msg.sender, mintAmount);
-        // @audit follow up, this seem sus
+        // @audit-high we've got em!!!
         // q why are we calculating the fees of flash loans in the deposit???
+
         uint256 calculatedFee = getCalculatedFee(token, amount);
         // q why are we updating the exchange rate??
         assetToken.updateExchangeRate(calculatedFee);
@@ -275,6 +276,7 @@ contract ThunderLoan is
         );
 
         uint256 endingBalance = token.balanceOf(address(assetToken));
+        // e ending balance => starting balance + fee
         if (endingBalance < startingBalance + fee) {
             revert ThunderLoan__NotPaidBack(
                 startingBalance + fee,
@@ -284,6 +286,8 @@ contract ThunderLoan is
         s_currentlyFlashLoaning[token] = false;
     }
 
+    // e this is what the contract expects users to repay using
+    // e users could just call transfer
     function repay(IERC20 token, uint256 amount) public {
         if (!s_currentlyFlashLoaning[token]) {
             revert ThunderLoan__NotCurrentlyFlashLoaning();
@@ -329,11 +333,22 @@ contract ThunderLoan is
     }
 
     // @audit-info where is the natspec?
+    // q is this calculating the fees of flash loans? yes
+    // q how is it calculating the fee?
+    // @param amount the amount being borrowed
+    // @param token the token being borrowed
     function getCalculatedFee(
         IERC20 token,
         uint256 amount
     ) public view returns (uint256 fee) {
         //slither-disable-next-line divide-before-multiply
+        // e so THIS is why we need tswap!
+        // q is this correct?
+
+        // 1 USDC == 0.1 WETH
+        // 1 USDC + 0.003 WETH
+        // 1 USDC + 0.003 USDC????
+        // @audit IMPACT prices are wrong -> med/high LIKELIHOOD -> high
         uint256 valueOfBorrowedToken = (amount *
             getPriceInWeth(address(token))) / s_feePrecision;
         //slither-disable-next-line divide-before-multiply

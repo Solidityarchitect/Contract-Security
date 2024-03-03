@@ -24,6 +24,7 @@ contract AssetToken is ERC20 {
     // The underlying per asset exchange rate
     // ie: s_exchangeRate = 2
     // means 1 asset token is worth 2 underlying tokens
+    // a its the rate between the underlying and the assert token
     uint256 private s_exchangeRate;
     uint256 public constant EXCHANGE_RATE_PRECISION = 1e18;
     uint256 private constant STARTING_EXCHANGE_RATE = 1e18;
@@ -56,6 +57,8 @@ contract AssetToken is ERC20 {
     constructor(
         address thunderLoan,
         IERC20 underlying,
+        // q where are the tokens stored?
+        // a they are stored in the assetToken contract
         string memory assetName,
         string memory assetSymbol
     )
@@ -81,6 +84,11 @@ contract AssetToken is ERC20 {
         address to,
         uint256 amount
     ) external onlyThunderLoan {
+        // weird erc20s???
+        // what happens if USDC denylisted the thunderloan contract?
+        // @audit-medium the protocol will be frozen, and that would suck
+        // if a user is denylisted, too bad
+        // if a user is denylisted, and it effects others, this is bad
         i_underlying.safeTransfer(to, amount);
     }
 
