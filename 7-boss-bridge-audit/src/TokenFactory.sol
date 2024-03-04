@@ -26,7 +26,13 @@ contract TokenFactory is Ownable {
         bytes memory contractBytecode
     ) public onlyOwner returns (address addr) {
         // q are you SURE you want this out of scope???
+        // q maybe this is a gas efficient way to do this? why are they doing this?
         assembly {
+            // X large
+            // load the contract bytecode into memory
+            // create a contract
+            // @audit-high this won't work on ZKSync!!
+            // Test this on zksync
             addr := create(
                 0,
                 add(contractBytecode, 0x20),
