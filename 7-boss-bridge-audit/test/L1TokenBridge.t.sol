@@ -23,7 +23,7 @@ contract L1BossBridgeTest is Test {
     L1Vault vault;
 
     function setUp() public {
-        vm.startPrank(deployer);
+        vm.startPrank(user);
 
         // Deploy token and transfer the user some initial balance
         token = new L1Token();
