@@ -1,5 +1,5 @@
 # Contract Audit
-![image](https://github.com/Solidityarchitect/Contract-Security/assets/125990317/da3be475-0ceb-4549-803e-0c371d9905b1)
+[![image](https://github.com/Solidityarchitect/Contract-Security/assets/125990317/da3be475-0ceb-4549-803e-0c371d9905b1)](https://www.cyfrin.io/)
 
 ## Puppy-Raffle-Audit
 [![image](https://github.com/Solidityarchitect/Contract-Security/blob/main/4-puppy-raffle-audit/images/puppy-raffle.svg)](https://github.com/Solidityarchitect/Contract-Security/tree/main/4-puppy-raffle-audit)
