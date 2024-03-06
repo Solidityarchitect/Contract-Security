@@ -8,11 +8,17 @@ This project is meant to be a permissionless way for users to swap assets betwee
 T-Swap is known as an [Automated Market Maker (AMM)](https://chain.link/education-hub/what-is-an-automated-market-maker-amm) because it doesn't use a normal "order book" style exchange, instead it uses "Pools" of an asset.
 It is similar to Uniswap. To understand Uniswap, please watch this video: [Uniswap Explained](https://www.youtube.com/watch?v=DLu35sIqVTM)
 
+## Overview Diagram
+
+![t-swap](./images/t-swap-with-factory.png)
+
 ## TSwap Pools
 
 The protocol starts as simply a `PoolFactory` contract. This contract is used to create new "pools" of tokens. It helps make sure every pool token uses the correct logic. But all the magic is in each `TSwapPool` contract.
 
 You can think of each `TSwapPool` contract as it's own exchange between exactly 2 assets. Any ERC20 and the [WETH](https://etherscan.io/token/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2) token. These pools allow users to permissionlessly swap between an ERC20 that has a pool and WETH. Once enough pools are created, users can easily "hop" between supported ERC20s.
+
+![t-swap](./images/tswap-basic.png)
 
 For example:
 
@@ -31,6 +37,8 @@ There are 2 functions users can call to swap tokens in the pool.
 We will talk about what those do in a little.
 
 ## Liquidity Providers
+
+![with-lps](./images/liquidity-providers.png)
 
 In order for the system to work, users have to provide liquidity, aka, "add tokens into the pool".
 
@@ -57,6 +65,8 @@ Note, in practice, the pool would have slightly different values than 1,400.3 WE
 ## Core Invariant
 
 Our system works because the ratio of Token A & WETH will always stay the same. Well, for the most part. Since we add fees, our invariant technially increases.
+
+![uniswap-delta-x](./images/uniswap-delta-x.png)
 
 `x * y = k`
 
@@ -89,6 +99,8 @@ Our protocol should always follow this invariant in order to keep swapping corre
 
 ## Make a swap
 
+![amm-basic](./images/amm-basic.png)
+
 After a pool has liquidity, there are 2 functions users can call to swap tokens in the pool.
 
 - `swapExactInput`
@@ -99,6 +111,7 @@ A user can either choose exactly how much to input (ie: I want to use 10 USDC to
 _This codebase is based loosely on [Uniswap v1](https://github.com/Uniswap/v1-contracts/tree/master)_
 
 - [TSwap](#tswap)
+  - [Overview Diagram](#overview-diagram)
   - [TSwap Pools](#tswap-pools)
   - [Liquidity Providers](#liquidity-providers)
     - [Why would I want to add tokens to the pool?](#why-would-i-want-to-add-tokens-to-the-pool)
